@@ -10,22 +10,28 @@
             <div class="bg-white p-6 rounded shadow mb-6">
                 <form method="POST" action="/employees">
                     @csrf
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <input type="text" name="name" placeholder="Full Name" required class="border p-2 rounded">
                         <input type="email" name="email" placeholder="Email" required class="border p-2 rounded">
                         <input type="text" name="position" placeholder="Position" required class="border p-2 rounded">
+                        <button type="submit" class="bg-gray-800 text-gray-200 hover:bg-gray-700 rounded">
+                            Add Employee
+                        </button>
                     </div>
-                    <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                        Add Employee
-                    </button>
+
+
                 </form>
             </div>
 
-            <div class="bg-white p-6 rounded shadow">
-                <table class="w-full table-auto">
+            <div class="bg-white p-6 rounded shadow ">
+                <form method="GET" action="/employees" class="mb-4 flex gap-2">
+                    <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Employee ID or Name" class="border p-2 rounded">
+                    <button type="submit" class="bg-gray-800 text-gray-200 hover:bg-gray-700 px-4 py-2 rounded">Filter</button>
+                </form>
+                
+                <table class="w-full table-auto mt-4">
                     <thead>
                         <tr class="bg-gray-100 text-left">
-                            <th class="p-2">#</th>
                             <th class="p-2">Employee_ID</th>
                             <th class="p-2">Name</th>
                             <th class="p-2">Email</th>
@@ -36,7 +42,6 @@
                     <tbody>
                         @foreach($employees as $employee)
                         <tr class="border-b">
-                            <td class="p-2">{{ $employee->id }}</td>
                             <td class="p-2">{{ $employee->employee_id }}</td>
                             <td class="p-2">{{ $employee->name }}</td>
                             <td class="p-2">{{ $employee->email }}</td>

@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Dark Mode Colors */
+.bg-dark-800 {
+    background-color: #1f2937; /* darker background */
+}
+
+.bg-dark-900 {
+    background-color: #111827; /* even darker */
+}
+
+.border-dark-700 {
+    border-color: #374151;
+}

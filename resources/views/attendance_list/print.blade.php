@@ -22,7 +22,8 @@
                 <th>Employee Name</th>
                 <th>Position</th>
                 <th>Employee ID</th>
-                <th>Date & Time</th>
+                <th>Time In</th>
+                <th>Time Out</th>
             </tr>
         </thead>
         <tbody>
@@ -31,11 +32,12 @@
                     <td>{{ $attendance->name }}</td>
                     <td>{{ $attendance->position }}</td>
                     <td>{{ $attendance->employee_id }}</td>
-                    <td>{{ $attendance->attended_at->format('F d, Y h:i A') }}</td>
+                    <td>{{ $attendance->time_in->format('h:i A') }}</td>
+                    <td>{{ $attendance->time_out ? $attendance->time_out->format('h:i A') : 'N/A' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="4" style="text-align: center;">No attendance records found.</td>
+                    <td colspan="5" style="text-align: center;">No attendance records found.</td>
                 </tr>
             @endforelse
         </tbody>

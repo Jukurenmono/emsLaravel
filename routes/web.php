@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\AuthenticatedSessionController;
 use App\Http\Controllers\AttendanceController;
 use Carbon\Carbon;
+use App\Http\Controllers\TaskController;
+use App\Models\Task;
 
 // Redirect to login page by default
 Route::get('/', function () {
@@ -24,21 +26,33 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
 
 Route::middleware(['auth', 'verified'])->get('/attendance_list', function (Request $request) {
     $date = $request->input('today_date', $request->input('date', now()->format('Y-m-d')));
+    $search = $request->input('search');
 
-    $attendances = DB::table('attendances')
+    $query = DB::table('attendances')
         ->join('employees', 'attendances.employee_id', '=', 'employees.employee_id')
         ->select('attendances.*', 'employees.name', 'employees.position')
-        ->whereDate('attendances.attended_at', $date)
-        ->orderBy('attended_at', 'desc')
-        ->get()
+        ->whereDate('attendances.time_in', $date);
+
+    if ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('employees.name', 'like', "%{$search}%")
+              ->orWhere('employees.employee_id', 'like', "%{$search}%");
+        });
+    }
+
+    $attendances = $query->orderBy('time_in', 'desc')->get()
         ->map(function ($attendance) {
-            $attendance->attended_at = Carbon::parse($attendance->attended_at);
+            $attendance->time_in = Carbon::parse($attendance->time_in);
+            if ($attendance->time_out) {
+                $attendance->time_out = Carbon::parse($attendance->time_out);
+            }
             return $attendance;
         });
 
     return view('attendance_list.index', [
         'attendances' => $attendances,
-        'selectedDate' => $date
+        'selectedDate' => $date,
+        'search' => $search,
     ]);
 })->name('attendance_list');
 
@@ -51,9 +65,24 @@ Route::middleware('auth')->group(function () {
 });
 
 // Employees management
-Route::get('/employees', function () {
-    $employees = DB::select("SELECT * FROM employees");
-    return view('employees.index', ['employees' => $employees]);
+Route::get('/employees', function (Request $request) {
+    $search = $request->input('search');
+
+    $query = DB::table('employees');
+
+    if ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('employee_id', 'like', "%{$search}%");
+        });
+    }
+
+    $employees = $query->get();
+
+    return view('employees.index', [
+        'employees' => $employees,
+        'search' => $search
+    ]);
 })->middleware('auth');
 
 Route::post('/employees', function (Request $request) {
@@ -108,13 +137,26 @@ Route::get('/employees/delete/{id}', function ($id) {
 
 // Attendance Routes
 Route::get('/attendance', function () {
+    $today = Carbon::today();
+
     $attendances = DB::table('attendances')
         ->join('employees', 'attendances.employee_id', '=', 'employees.employee_id')
         ->select('attendances.*', 'employees.name', 'employees.position')
-        ->orderBy('attended_at', 'desc')
-        ->get();
+        ->whereDate('time_in', $today)
+        ->orderBy('time_in', 'desc')
+        ->get()
+        ->map(function ($attendance) {
+            $attendance->time_in = \Carbon\Carbon::parse($attendance->time_in);
+            if ($attendance->time_out) {
+                $attendance->time_out = \Carbon\Carbon::parse($attendance->time_out);
+            }
+            return $attendance;
+        });
 
-    return view('attendance.form', ['attendances' => $attendances]);
+    return view('attendance.form', [
+        'attendances' => $attendances,
+
+    ]);
 });
 
 // Record Time-In / Time-Out
@@ -131,7 +173,7 @@ Route::post('/attendance', function (Request $request) {
     // Check if the employee has already clocked in today
     $existingAttendance = DB::table('attendances')
         ->where('employee_id', $request->employee_id)
-        ->whereDate('attended_at', $today)
+        ->whereDate('time_in', $today)
         ->first();
 
     if ($existingAttendance && is_null($existingAttendance->time_out)) {
@@ -147,7 +189,7 @@ Route::post('/attendance', function (Request $request) {
         // If no attendance exists today, record time-in
         DB::table('attendances')->insert([
             'employee_id' => $request->employee_id,
-            'attended_at' => now(),
+            'time_in' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -166,8 +208,8 @@ Route::post('/attendance/filter', function (Request $request) {
     $attendances = DB::table('attendances')
         ->join('employees', 'attendances.employee_id', '=', 'employees.employee_id')
         ->select('attendances.*', 'employees.name', 'employees.position')
-        ->whereDate('attendances.attended_at', $selectedDate)
-        ->orderBy('attended_at', 'desc')
+        ->whereDate('attendances.time_in', $selectedDate)
+        ->orderBy('time_in', 'desc')
         ->get();
 
     return view('attendance.form', ['attendances' => $attendances]);
@@ -175,5 +217,13 @@ Route::post('/attendance/filter', function (Request $request) {
 
 Route::get('/attendance_list/print', [AttendanceController::class, 'print'])->name('attendance_list.print');
 
+Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+
+Route::get('/dashboard', function () {
+    $tasks = Task::all();
+    return view('dashboard', compact('tasks'));
+})->name('dashboard');
 
 require __DIR__.'/auth.php';

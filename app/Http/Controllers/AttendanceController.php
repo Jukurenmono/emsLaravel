@@ -15,11 +15,14 @@ class AttendanceController extends Controller
         $attendances = DB::table('attendances')
             ->join('employees', 'attendances.employee_id', '=', 'employees.employee_id')
             ->select('attendances.*', 'employees.name', 'employees.position')
-            ->whereDate('attendances.attended_at', $selectedDate)
-            ->orderBy('attended_at', 'desc')
+            ->whereDate('attendances.time_in', $selectedDate)
+            ->orderBy('time_in', 'desc')
             ->get()
             ->map(function ($attendance) {
-                $attendance->attended_at = Carbon::parse($attendance->attended_at);
+                $attendance->time_in = Carbon::parse($attendance->time_in);
+                if ($attendance->time_out) {
+                    $attendance->time_out = Carbon::parse($attendance->time_out);
+                }
                 return $attendance;
             });
 

@@ -9,14 +9,18 @@
 
             <!-- Attendance Records Filter Section -->
             <div class="bg-white p-6 rounded shadow mb-6">
-                <div class="flex items-center justify-between">
-                    <!-- Left side: Label and Date input -->
-                    <div class="flex items-center space-x-2">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <!-- Left side: Label, Date input, and Search bar -->
+                    <form method="GET" action="/attendance_list" id="attendance-form" class="flex items-center gap-2 flex-wrap">
+                        <label for="search" class="text-gray-700 font-medium">Search:</label>
+                        <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Employee ID or Name" class="border p-2 rounded">
+                        
+                        <button type="submit" class="bg-gray-800 text-gray-200 hover:bg-gray-700 mr-4 px-4 py-2 rounded">Search</button>
+
                         <label for="date-input" class="text-gray-700 font-medium">Select Date:</label>
-                        <form method="GET" action="/attendance_list" id="attendance-form">
-                            <input type="date" name="date" id="date-input" value="{{ $selectedDate ?? now()->toDateString() }}" class="border p-2 rounded">
-                        </form>
-                    </div>
+                        <input type="date" name="date" id="date-input" value="{{ $selectedDate ?? now()->toDateString() }}" class="border p-2 rounded">
+
+                    </form>
 
                     <!-- Right side: Print button -->
                     <a href="{{ route('attendance_list.print', ['date' => request('date', now()->toDateString())]) }}" 
@@ -26,7 +30,7 @@
                     </a>
                 </div>
 
-                <p class="text-sm text-gray-500 mt-2">Select a date and click 'Filter' to update the attendance list.</p>
+                <p class="text-sm text-gray-500 mt-2">Search for an employee by name or ID or filter attendance list by date.</p>
             </div>
 
             <!-- Attendance Records Section -->
@@ -35,23 +39,29 @@
                 <table class="w-full table-auto">
                     <thead>
                         <tr class="bg-gray-100 text-left">
-                            <th class="p-2">Employee Name</th>
-                            <th class="p-2">Position</th>
-                            <th class="p-2">Employee ID</th>
-                            <th class="p-2">Date & Time</th>
+                            <th>Employee ID</th>
+                            <th>Employee Name</th>
+                            <th>Position</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($attendances as $attendance)
                             <tr class="border-b">
+                                <td class="p-2">{{ $attendance->employee_id }}</td>
                                 <td class="p-2">{{ $attendance->name }}</td>
                                 <td class="p-2">{{ $attendance->position }}</td>
-                                <td class="p-2">{{ $attendance->employee_id }}</td>
-                                <td class="p-2">{{ $attendance->attended_at->format('F d, Y h:i A') }}</td>
+                                <td class="p-2">
+                                    {{ $attendance->time_in ? $attendance->time_in->format('h:i A') : '—' }}
+                                </td>
+                                <td class="p-2">
+                                    {{ $attendance->time_out ? $attendance->time_out->format('h:i A') : '—' }}
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="p-2 text-center text-gray-500">No attendance records found.</td>
+                                <td colspan="5" class="p-2 text-center text-gray-500">No attendance records found.</td>
                             </tr>
                         @endforelse
                     </tbody>
